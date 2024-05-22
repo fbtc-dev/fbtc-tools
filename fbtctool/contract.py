@@ -8,6 +8,9 @@ from . import config
 
 
 class ContractFunctionWrapper(object):
+
+    _ignore_error = False
+
     def __init__(self, web3, func, sender) -> None:
         self.web3 = web3
         self.func = func
@@ -47,7 +50,11 @@ class ContractFunctionWrapper(object):
             args, tx_args = self._split_args(args)
             return self.func(*args, **kwds).call(tx_args)
         except Exception as e:
-            print(f"[!] Error calling {self.func} {e}")
+            if self._ignore_error:
+                print(f"[!] Error calling {self.func}: {e}")
+                return None
+            else:
+                raise e
 
     def transact(self, *args: Any, **kwds: Any) -> Any:
         args, tx_args = self._split_args(args)

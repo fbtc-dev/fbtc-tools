@@ -1,5 +1,5 @@
 from . import config
-from .contract import ContractFactory
+from .contract import ContractFactory, ContractFunctionWrapper
 from .utils import Printer, EVM_CHAIN_ID_TO_NAME, FBTC_CHAIN_ID_TO_NAME
 
 printer = Printer()
@@ -23,12 +23,14 @@ class Viewer(object):
         self.FEE_RATE_BASE = 1_000_000
         self.dec = 8
 
-    def _print_list(self, title="", items=[]):
+    def _print_list(self, title="", items=[], is_addr=True):
         if title:
             p(title)
         if items:
             with indent():
                 for i, s in enumerate(items):
+                    if is_addr:
+                        s = self._addr_name(s)
                     p(f"({i+1}) {s}")
 
     def _chain_name(self, chain_id):
@@ -37,6 +39,21 @@ class Viewer(object):
         else:
             name = FBTC_CHAIN_ID_TO_NAME.get(chain_id, "Unknown chain")
         return f"{name} ({chain_id})"
+    
+    def _addr_name(self, addr):
+        if len(self.factory.web3.eth.get_code(addr)) == 0:
+            return f"{addr} EOA"
+        else:
+            try:
+                safe = self.factory.contract(addr, "Safe")
+                tmp = ContractFunctionWrapper._ignore_error
+                ContractFunctionWrapper._ignore_error = False
+                owners = safe.getOwners()
+                threshold = safe.getThreshold()
+                ContractFunctionWrapper._ignore_error = tmp
+                return f"{addr} Safe {threshold} / {len(owners)}"
+            except Exception as e:
+                return f"{addr} Contract"
 
     def print_chain_info(self):
         chain_id = self.factory.web3.eth.chain_id
@@ -46,16 +63,16 @@ class Viewer(object):
     def print_bridge(self):
         p(f"FireBridge: {self.bridge.address}")
         with indent():
-            p(f"Owner: {self.bridge.owner()}")
-            p(f"Pending Owner: {self.bridge.pendingOwner()}")
+            p(f"Owner: {self._addr_name(self.bridge.owner())}")
+            p(f"Pending Owner: {self._addr_name(self.bridge.pendingOwner())}")
             p(f"Paused: {self.bridge.paused()}")
             p(f"FBTC: {self.bridge.fbtc()}")
             p(f"Minter: {self.bridge.minter()}")
-            p(f"Fee Recipient: {self.bridge.feeRecipient()}")
+            p(f"Fee Recipient: {self._addr_name(self.bridge.feeRecipient())}")
             p(f"Main Chain: {self._chain_name(self.bridge.MAIN_CHAIN().hex())}")
             p(f"Current Chain: {self._chain_name(self.bridge.chain().hex())}")
             self.dst_chains = self.bridge.getValidDstChains()
-            self._print_list(f"Cross-chain whilist:", [self._chain_name(chain.hex()) for chain in self.dst_chains])
+            self._print_list(f"Cross-chain whilist:", [self._chain_name(chain.hex()) for chain in self.dst_chains], False)
 
             users = self.bridge.getQualifiedUsers()
 
@@ -64,7 +81,7 @@ class Viewer(object):
                 info = self.bridge.getQualifiedUserInfo(user)
                 if info:
                     with indent():
-                        p(f"({i+1}) EVM Address: {user}")
+                        p(f"({i+1}) EVM Address: {self._addr_name(user)}")
                         with indent():
                             p(f"Locked: {info[0]}")
                             p(f"BTC Deposit Address: {info[1]}")
@@ -77,7 +94,7 @@ class Viewer(object):
         p(f"FBTC: {self.fbtc.address}")
         with indent():
             p(f"Bridge: {self.fbtc.bridge()}")
-            p(f"Owner: {self.fbtc.owner()}")
+            p(f"Owner: {self._addr_name(self.fbtc.owner())}")
             p(f"Paused: {self.fbtc.paused()}")
 
             self.dec = self.fbtc.decimals()
@@ -90,7 +107,7 @@ class Viewer(object):
         p(f"FBTCMinter: {self.minter.address}")
        
         with indent():
-            p(f"Owner: {self.minter.owner()}")
+            p(f"Owner: {self._addr_name(self.minter.owner())}")
             p(f"Bridge: {self.minter.bridge()}")
 
             BURN_ROLE = self.minter.BURN_ROLE()
@@ -198,6 +215,7 @@ class Viewer(object):
                             self._print_list("Cross-chain Fee Updater:", module.getRoleMembers(FEE_UPDATER_ROLE))
 
     def print(self):
+        ContractFunctionWrapper._ignore_error = True
         self.print_chain_info()
         printer.line()
         self.print_bridge()
