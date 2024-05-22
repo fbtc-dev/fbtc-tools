@@ -43,8 +43,11 @@ class ContractFunctionWrapper(object):
         return args, tx_args
 
     def call(self, *args: Any, **kwds: Any) -> Any:
-        args, tx_args = self._split_args(args)
-        return self.func(*args, **kwds).call(tx_args)
+        try:
+            args, tx_args = self._split_args(args)
+            return self.func(*args, **kwds).call(tx_args)
+        except Exception as e:
+            print(f"[!] Error calling {self.func} {e}")
 
     def transact(self, *args: Any, **kwds: Any) -> Any:
         args, tx_args = self._split_args(args)

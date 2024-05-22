@@ -18,3 +18,45 @@ def get_bridge(chain_id: int, bridge_addr: str = None):
     if bridge_addr is None:
         bridge_addr = config.FBTC_DEPLOYMENT[chain_id]["bridge"]
     return ContractFactory(rpc).contract(bridge_addr, "FireBridge")
+
+class Printer(object):
+
+    def __init__(self) -> None:
+        self._indent_cnt = 0
+
+    def print(self, *args, **kwargs):
+        indent = ' ' * self._indent_cnt
+        print(indent, *args, **kwargs)
+
+    def line(self, size=80, c='='):
+        self.print(c * size)
+
+    def indent(self, size=4):
+        _printer = self
+        class _Indent(object):
+            def __enter__(self):
+                nonlocal _printer
+                nonlocal size
+                _printer._indent_cnt += size
+            
+            def __exit__(self, *args):
+                nonlocal _printer
+                nonlocal size
+                _printer._indent_cnt -= size
+        return _Indent()
+    
+EVM_CHAIN_ID_TO_NAME = {
+    1: "Ethereum Mainnet",
+    11155111:"Ethereum Sepolia Testnet",
+    5000: "Mantle",
+    5003: "Mantle Sepolia Testnet"
+}
+
+FBTC_CHAIN_ID_TO_NAME = {
+    "0100000000000000000000000000000000000000000000000000000000000000": "BTC Mainnet",
+    "0110000000000000000000000000000000000000000000000000000000000000": "BTC XTN Testnet",
+    "0000000000000000000000000000000000000000000000000000000000000001": "Ethereum Mainnet",
+    "0000000000000000000000000000000000000000000000000000000000aa36a7": "Ethereum Sepolia Testnet",
+    "0000000000000000000000000000000000000000000000000000000000001388": "Mantle",
+    "000000000000000000000000000000000000000000000000000000000000138b": "Mantle Sepolia Testnet"
+}
