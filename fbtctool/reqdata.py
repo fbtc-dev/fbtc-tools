@@ -70,19 +70,21 @@ class FBTCRequest(object):
 class RequestData(object):
 
     def __init__(self, raw_str: str) -> None:
-        self.raw = json.loads(raw_str.strip())["raw_data"]
 
-        self.sender = self.raw["from_address"]
-        self.to = self.raw["to_address"]
-        self.value = int(self.raw["amount"])
+        self.raw = json.loads(raw_str.strip())
+        self.raw_data = self.raw["raw_data"]
 
-        extra = self.raw["extra_parameters"]
+        self.sender = self.raw_data["from_address"]
+        self.to = self.raw_data["to_address"]
+        self.value = int(self.raw_data["amount"])
+
+        extra = self.raw_data["extra_parameters"]
         if extra:
             self.data = json.loads(extra).get("calldata")
         else:
             self.data = None
 
-        note = self.raw["note"]
+        note = self.raw_data["note"]
         assert note
 
         self.info = json.loads(note)["bridge_tx_info"]

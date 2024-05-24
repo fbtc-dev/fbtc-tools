@@ -53,8 +53,7 @@ class Verifier(object):
 
 
         if 'add_cross_chain_request_tx_ids' in data.info:
-            txids = data.info['add_cross_chain_request_tx_ids']
-            self.verify_crosschain(data, txids)
+            self.verify_crosschain(data)
             return
         
         req = self._get_fbtc_request(data.chain_id, data.request_hash)
@@ -180,7 +179,7 @@ class Verifier(object):
             f"{req_to_addr} vs {data.to}"
         )
 
-    def verify_crosschain(self, data: RequestData, txids: list):
+    def verify_crosschain(self, data: RequestData):
 
         self.log(
             "The signing tx is calling to Minter contract", 
@@ -198,9 +197,49 @@ class Verifier(object):
             data.data[:8]
         )
 
-        # self.log(
-        #     "All fields in ConfirmCrosschainRequest arguments, "
-        #     "except for op, should be identical to the AddCrosschainRequest one",
-        #     None,
-        #     f"\n {req}"
-        # )
+        i = 0
+        while True:
+            src_chain_key = f"params.req.{i}.srcChain"
+            dst_chain_key = f"params.req.{i}.dstChain"
+            req_key = f"params.req.{i}.extra"
+
+            src_chain = None
+            req_hash = None
+
+            for item in data.raw["customs"]:
+                if src_chain_key in item:
+                    src_chain = item[src_chain_key][0]
+                if dst_chain_key in item:
+                    dst_chain = item[dst_chain_key][0]
+                if req_key in item:
+                    req_hash = '0x' + item[req_key][0]
+
+            if src_chain is None:
+                break
+
+            src_chain_id = int(src_chain, 16)
+            dst_chain_id = int(dst_chain, 16)
+            assert src_chain_id in config.FBTC_DEPLOYMENT, "Unknown chain"
+
+            # same address on src and dst.
+            src_bridge = get_bridge(src_chain_id, self.bridge_addr) 
+            dst_bridge = get_bridge(dst_chain_id, self.bridge_addr) 
+            req =  FBTCRequest(
+                req_hash,
+                src_bridge.getRequestByHash(req_hash)
+            )
+
+            print(req)
+
+            confirmation_hash = dst_bridge.crosschainRequestConfirmation(req_hash)
+            self.log(
+                "Request not confirmed on target chain:",
+                confirmation_hash == b"\x00" * 32,
+                confirmation_hash.hex()
+            )
+            
+            # TODO:
+            # req_txid = None
+            # self._eth_tx_check("AddCrosschainRequest", src_chain_id, req_hash, req_txid)
+
+            i += 1
