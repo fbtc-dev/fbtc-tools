@@ -50,7 +50,7 @@ class ContractFunctionWrapper(object):
             args, tx_args = self._split_args(args)
             return self.func(*args, **kwds).call(tx_args)
         except Exception as e:
-            if self._ignore_error:
+            if self.__class__._ignore_error:
                 print(f"[!] Error calling {self.func}: {e}")
                 return None
             else:

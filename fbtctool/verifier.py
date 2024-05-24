@@ -18,14 +18,17 @@ class Verifier(object):
 
         self.btcrpc = BitcoinRPC(config.DEFAULT_BTC_RPC)
 
-    def log(self, check_item: str, result, true_msg: str = "Yes", false_msg="No"):
+    def log(self, check_item: str, result, true_msg: str = "Yes", false_msg=None):
         self._check_index += 1
         flag = ({
             True: "[OK]",
             False: "[!!]",
             None: "[--]"
         })[result]
-        msg = true_msg if result else false_msg
+        if result or false_msg is None:
+            msg = true_msg
+        else:
+            msg = false_msg
         print(f"({self._check_index}) {flag} {check_item}: {msg}")
 
     def _reset_context(self, chain_id):
@@ -48,8 +51,12 @@ class Verifier(object):
 
         self._reset_context(data.chain_id)
 
-        # Init context
 
+        if 'add_cross_chain_request_tx_ids' in data.info:
+            txids = data.info['add_cross_chain_request_tx_ids']
+            self.verify_crosschain(data, txids)
+            return
+        
         req = self._get_fbtc_request(data.chain_id, data.request_hash)
         print(req)
 
@@ -57,8 +64,6 @@ class Verifier(object):
             self.verify_mint(data, req)
         elif req.op_str == "Burn":
             self.verify_burn(data, req)
-        elif req.op_str == "CrosschainRequest":
-            self.verify_crosschain(data, req)
         else:
             print("Unexpected request data")
             print(data)
@@ -97,7 +102,7 @@ class Verifier(object):
             data.value
         )
         self.log(
-            "The signing tx's calldata is a confirmMintRequest(0x2bf90baa) call", 
+            "The signing tx's selector is confirmMintRequest(0x2bf90baa)", 
             data.data[:8] == "2bf90baa",
             data.data[:8]
         )
@@ -152,6 +157,7 @@ class Verifier(object):
         )
 
     def verify_burn(self, data: RequestData, req: FBTCRequest):
+
         req_txid = data.info["add_burn_request_tx_id"]
     
         print("AddBurnRequest txid:", req_txid)
@@ -174,17 +180,27 @@ class Verifier(object):
             f"{req_to_addr} vs {data.to}"
         )
 
-    def verify_crosschain(self, data: RequestData, req: FBTCRequest):
-
-        req_txid = data.info["add_burn_request_tx_id"]
-
-        print("AddCrosschainRequest txid:", req_txid)
-        self._eth_tx_check("AddCrosschainRequest", req.hash, req_txid)
-        self.log("Request op is CrosschainConfirm", req.op == 3, req.op_str)
+    def verify_crosschain(self, data: RequestData, txids: list):
 
         self.log(
-            "All fields in ConfirmCrosschainRequest arguments, "
-            "except for op, should be identical to the AddCrosschainRequest one",
-            None,
-            f"\n {req}"
+            "The signing tx is calling to Minter contract", 
+            data.to.lower() == self.bridge.minter().lower(),
+            data.to
         )
+        self.log(
+            "The signing tx's value is 0", 
+            data.value == 0,
+            data.value
+        )
+        self.log(
+            "The signing tx's selector is batchConfirmCrosschainRequest (0xdfcf4559) or confirmMintRequest (0x2bf90baa)", 
+            data.data[:8] in ["dfcf4559", "0x2bf90baa"],
+            data.data[:8]
+        )
+
+        # self.log(
+        #     "All fields in ConfirmCrosschainRequest arguments, "
+        #     "except for op, should be identical to the AddCrosschainRequest one",
+        #     None,
+        #     f"\n {req}"
+        # )

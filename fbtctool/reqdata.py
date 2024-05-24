@@ -70,7 +70,7 @@ class FBTCRequest(object):
 class RequestData(object):
 
     def __init__(self, raw_str: str) -> None:
-        self.raw = json.loads(raw_str)["raw_data"]
+        self.raw = json.loads(raw_str.strip())["raw_data"]
 
         self.sender = self.raw["from_address"]
         self.to = self.raw["to_address"]

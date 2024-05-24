@@ -40,19 +40,32 @@ class Viewer(object):
             name = FBTC_CHAIN_ID_TO_NAME.get(chain_id, "Unknown chain")
         return f"{name} ({chain_id})"
     
+
+    def _call_if_error(self, func):
+        tmp = ContractFunctionWrapper._ignore_error
+        ContractFunctionWrapper._ignore_error = False
+        r = None
+        e = None
+        try:
+            r = func()
+        except Exception as _e:
+            e = _e
+        ContractFunctionWrapper._ignore_error = tmp
+        return r, e
+
     def _addr_name(self, addr):
         if len(self.factory.web3.eth.get_code(addr)) == 0:
             return f"{addr} EOA"
         else:
-            try:
-                safe = self.factory.contract(addr, "Safe")
-                tmp = ContractFunctionWrapper._ignore_error
-                ContractFunctionWrapper._ignore_error = False
+            safe = self.factory.contract(addr, "Safe")
+            def _f():
                 owners = safe.getOwners()
                 threshold = safe.getThreshold()
-                ContractFunctionWrapper._ignore_error = tmp
                 return f"{addr} Safe {threshold} / {len(owners)}"
-            except Exception as e:
+            r, e = self._call_if_error(_f())
+            if e is None:
+                return r
+            else:
                 return f"{addr} Contract"
 
     def print_chain_info(self):
@@ -159,21 +172,19 @@ class Viewer(object):
 
             if self.dst_chains:
                 for target in self.dst_chains:
-                    fee = self.fee_model.getChainFeeConfig(CROSS_OP, target)
-                    if fee[1]:
+                    fee, e = self._call_if_error(lambda: self.fee_model.getCrosschainFeeConfig(target))
+                    if e is None:
                         p(f"Cross-chain to {target.hex()}:")
                         self._print_fee_cfg(fee)
 
     def print_safe(self):
-        try:
-            addr = self.bridge.owner()
-            safe = self.factory.contract(addr, "Safe")
-            ver = safe.VERSION()
-        except Exception as e:
-            print(f"[!] FireBridge owner {addr} may be not a Safe wallet")
-            return
+
         
-        p(f"FireBridge Owner Safe: {addr}")
+        addr = self.bridge.owner()
+        safe = self.factory.contract(addr, "Safe")
+        ver, e = self._call_if_error(lambda: safe.VERSION())        
+        if e:
+            p(f"FireBridge Owner Safe: {addr}")
 
         with indent():
             owners = safe.getOwners()
@@ -205,7 +216,7 @@ class Viewer(object):
                     FEE_UPDATER_ROLE =  module.FEE_UPDATER_ROLE()
                     with indent():
                         p("FBTCGovernorModule: ")
-                        p(f"Owner: {module.owner()}")
+                        p(f"Owner: {self._addr_name(module.owner())}")
                         with indent():
                             self._print_list("Qualified User Managers:", module.getRoleMembers(USER_MANAGER_ROLE))
                             self._print_list("FBTC Block-list Managers:", module.getRoleMembers(LOCKER_ROLE))
