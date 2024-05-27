@@ -181,15 +181,24 @@ class Viewer(object):
 
         
         addr = self.bridge.owner()
-        safe = self.factory.contract(addr, "Safe")
-        ver, e = self._call_if_error(lambda: safe.VERSION())        
+
+        safe = None
+        def _foo():
+            nonlocal safe
+            safe = self.factory.contract(addr, "Safe")
+            return safe.VERSION()
+        ver, e = self._call_if_error(_foo)     
         if e:
-            p(f"FireBridge Owner Safe: {addr}")
+            p(f"FireBridge owner is not Safe wallet {addr}")
+            return
+        
+        p(f"FireBridge Owner Safe: {addr}")
 
         with indent():
+            p(f"Version: {ver}")
+
             owners = safe.getOwners()
             threshold = safe.getThreshold()
-            p(f"Version: {ver}")
             p(f"Threshold: {threshold} / {len(owners)}")
             self._print_list(f"Owners: {len(owners)} owners", owners)
             
