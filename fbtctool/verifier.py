@@ -4,19 +4,24 @@ from . import config
 from .btcrpc import BitcoinRPC
 from .contract import ContractFactory
 from .reqdata import FBTCRequest, RequestData
-from .utils import get_bridge, get_web3
+from .utils import get_bridge, get_web3, get_btc_rpc
 
 REQUEST_EVENT = HexBytes("903c4021d4469fbbdf338ec3409a975e2ccbd3990776eab0750c28a16617d780")
 
 class Verifier(object):
 
-    def __init__(self, bridge_addr=None) -> None:
+    def __init__(self, btc_rpc=None, bridge_addr=None) -> None:
+        if btc_rpc == None:
+            btc_rpc = config.DEFAULT_BTC_RPC
+        else:
+            btc_rpc = get_btc_rpc(btc_rpc)
+
         if bridge_addr == None:
             self.bridge_addr = config.DEFAULT_BRIDGE
         else:
             self.bridge_addr = bridge_addr
 
-        self.btcrpc = BitcoinRPC(config.DEFAULT_BTC_RPC)
+        self.btcrpc = BitcoinRPC(btc_rpc)
 
     def log(self, check_item: str, result, true_msg: str = "Yes", false_msg=None):
         self._check_index += 1

@@ -1,7 +1,5 @@
 import json
 
-from .utils import get_bridge
-
 class FBTCRequest(object):
     OP = {
         0: "Nop",

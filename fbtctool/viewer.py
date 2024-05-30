@@ -1,6 +1,6 @@
 from . import config
 from .contract import ContractFactory, ContractFunctionWrapper
-from .utils import Printer, EVM_CHAIN_ID_TO_NAME, FBTC_CHAIN_ID_TO_NAME
+from .utils import Printer, EVM_CHAIN_ID_TO_NAME, FBTC_CHAIN_ID_TO_NAME, get_evm_rpc
 
 printer = Printer()
 p = printer.print
@@ -10,6 +10,8 @@ class Viewer(object):
     def __init__(self, rpc_url=None, bridge_address=None) -> None:
         if rpc_url is None:
             rpc_url = config.DEFAULT_ETH_RPC
+        else:
+            rpc_url = get_evm_rpc(rpc_url)
         if bridge_address is None:
             bridge_address = config.DEFAULT_BRIDGE
 
@@ -62,7 +64,7 @@ class Viewer(object):
                 owners = safe.getOwners()
                 threshold = safe.getThreshold()
                 return f"{addr} Safe {threshold} / {len(owners)}"
-            r, e = self._call_if_error(_f())
+            r, e = self._call_if_error(_f)
             if e is None:
                 return r
             else:
@@ -81,6 +83,7 @@ class Viewer(object):
             p(f"Paused: {self.bridge.paused()}")
             p(f"FBTC: {self.bridge.fbtc()}")
             p(f"Minter: {self.bridge.minter()}")
+            p(f"Fee Model: {self.bridge.feeModel()}")
             p(f"Fee Recipient: {self._addr_name(self.bridge.feeRecipient())}")
             p(f"Main Chain: {self._chain_name(self.bridge.MAIN_CHAIN().hex())}")
             p(f"Current Chain: {self._chain_name(self.bridge.chain().hex())}")
@@ -108,6 +111,7 @@ class Viewer(object):
         with indent():
             p(f"Bridge: {self.fbtc.bridge()}")
             p(f"Owner: {self._addr_name(self.fbtc.owner())}")
+            p(f"Pending Owner: {self._addr_name(self.fbtc.pendingOwner())}")
             p(f"Paused: {self.fbtc.paused()}")
 
             self.dec = self.fbtc.decimals()
@@ -121,6 +125,7 @@ class Viewer(object):
        
         with indent():
             p(f"Owner: {self._addr_name(self.minter.owner())}")
+            p(f"Pending Owner: {self._addr_name(self.minter.pendingOwner())}")
             p(f"Bridge: {self.minter.bridge()}")
 
             BURN_ROLE = self.minter.BURN_ROLE()
@@ -132,6 +137,9 @@ class Viewer(object):
             self._print_list("Cross-chaining:",self.minter.getRoleMembers(CROSSCHAIN_ROLE))
 
     def _print_fee_cfg(self, cfg):
+        if cfg is None:
+            return
+        
         with indent():
             p(f"Minimal: {self._to_btc(cfg[0])}")
             p(f"Fee Rate Tiers:")
@@ -149,7 +157,8 @@ class Viewer(object):
         p(f"FeeModel: {self.fee_model.address}")
 
         with indent():
-            p(f"Owner: {self.fee_model.owner()}")
+            p(f"Owner: {self._addr_name(self.fee_model.owner())}")
+            p(f"Pending Owner: {self._addr_name(self.fee_model.pendingOwner())}")
 
             self.FEE_RATE_BASE = self.fee_model.FEE_RATE_BASE()
 
@@ -226,6 +235,7 @@ class Viewer(object):
                     with indent():
                         p("FBTCGovernorModule: ")
                         p(f"Owner: {self._addr_name(module.owner())}")
+                        p(f"Pending Owner: {self._addr_name(module.pendingOwner())}")
                         with indent():
                             self._print_list("Qualified User Managers:", module.getRoleMembers(USER_MANAGER_ROLE))
                             self._print_list("FBTC Block-list Managers:", module.getRoleMembers(LOCKER_ROLE))

@@ -1,6 +1,20 @@
+import sys
+
 from web3 import Web3
 from . import config
 from .contract import ContractFactory
+
+def get_btc_rpc(url_or_name: str):
+    for k, v in config.BTC_RPC.items():
+        if k == url_or_name.lower():
+            return v
+    return url_or_name
+
+def get_evm_rpc(url_or_name: str):
+    for cfg in config.FBTC_DEPLOYMENT.values():
+        if cfg["name"] == url_or_name.lower():
+            return cfg["rpc"]
+    return url_or_name
 
 def get_web3(chain_id: int):
     assert chain_id in config.FBTC_DEPLOYMENT, f"Unknown chain {chain_id}"
@@ -18,6 +32,19 @@ def get_bridge(chain_id: int, bridge_addr: str = None):
     if bridge_addr is None:
         bridge_addr = config.FBTC_DEPLOYMENT[chain_id]["bridge"]
     return ContractFactory(rpc).contract(bridge_addr, "FireBridge")
+
+def read_json() -> str:
+    cnt = 0
+    s = ""
+    while True:
+        c = sys.stdin.read(1)
+        s += c
+        if c == '{':
+            cnt += 1
+        elif c == '}':
+            cnt -= 1
+            if cnt == 0:
+                return s
 
 class Printer(object):
 

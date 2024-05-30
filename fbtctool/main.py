@@ -1,7 +1,8 @@
 from argparse import ArgumentParser
 
-from .verifier import Verifier
+from .verifier import Verifier, RequestData
 from .viewer import Viewer
+from .utils import read_json
 
 
 def main():
@@ -12,13 +13,13 @@ def main():
     parser.add_argument(
         "-b",
         "--btc-rpc",
-        help="Bitcoin RPC endpoint.",
+        help="Bitcoin RPC endpoint. URL or alias: btc, xtn",
     )
 
     parser.add_argument(
         "-e",
         "--evm-rpc",
-        help="EVM RPC endpoint.",
+        help="EVM RPC endpoint. URL or alias: eth, seth, mnt, smnt.",
     )
 
     parser.add_argument(
@@ -33,19 +34,22 @@ def main():
         action="store_true",
         help="View the contract information.",
     )
-    parser.add_argument("-r", "--request-hash", help="The hash of FBTC request.")
-    parser.add_argument("-t", "--txid", help="The txid of the source request.")
+    parser.add_argument(
+        "-r", 
+        "--request-verify", 
+        action="store_true",
+        help="Verify request data."
+    )
 
     args = parser.parse_args()
-
     
-    if args.request_hash:
-        assert args.txid, f"--txid not set"
-        v = Verifier(args.evm_rpc, args.btc_rpc, args.bridge_address)
-        v.verify_request(args.request_hash, args.txid)
-
-    elif args.view:
+    if args.view:
         Viewer(args.evm_rpc, args.bridge_address).print()
+    elif args.request_verify:
+        print("Paste request data in JSON format:")
+        s = read_json()
+        r = RequestData(s)
+        Verifier(args.btc_rpc, args.bridge_address).verify_request(r)
 
 if __name__ == "__main__":
     main()

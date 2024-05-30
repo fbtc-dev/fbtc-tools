@@ -1,4 +1,7 @@
-XTN_RPC_URL = "https://bitcoin-testnet.drpc.org"
+BTC_RPC = {
+    "btc": "https://bitcoin.drpc.org",
+    "xtn": "https://bitcoin-testnet.drpc.org"
+}
 
 FBTC_DEPLOYMENT = {
     11155111: { # 0xaa36a7
@@ -10,9 +13,19 @@ FBTC_DEPLOYMENT = {
         "name": "smnt",
         "rpc": "https://rpc.sepolia.mantle.xyz",
         "bridge": "0x0aD89E552ed249a8A60729214e8F5e483f317F47"
+    },
+    5000: { # 0x1338
+        "name": "mnt",
+        "rpc": "https://mantle.drpc.org",
+        "bridge": "0xbee335BB44e75C4794a0b9B54E8027b111395943"
+    },
+    1: { # 0x1
+        "name": "eth",
+        "rpc": "https://eth.drpc.org",
+        "bridge": "0xbee335BB44e75C4794a0b9B54E8027b111395943"
     }
 }
 
-DEFAULT_BTC_RPC = XTN_RPC_URL
-DEFAULT_ETH_RPC = FBTC_DEPLOYMENT[11155111]["rpc"]
-DEFAULT_BRIDGE = FBTC_DEPLOYMENT[11155111]["bridge"]
+DEFAULT_BTC_RPC = BTC_RPC["btc"]
+DEFAULT_ETH_RPC = FBTC_DEPLOYMENT[1]["rpc"]
+DEFAULT_BRIDGE = FBTC_DEPLOYMENT[1]["bridge"]
