@@ -36,18 +36,16 @@ def main():
     )
     parser.add_argument(
         "-r", 
-        "--request-verify", 
-        action="store_true",
-        help="Verify request data."
+        "--request-file-path", 
+        help="Verify request data json file."
     )
 
     args = parser.parse_args()
     
     if args.view:
         Viewer(args.evm_rpc, args.bridge_address).print()
-    elif args.request_verify:
-        print("Paste request data in JSON format:")
-        s = read_json()
+    elif args.request_file_path:
+        s = open(args.request_file_path).read()
         r = RequestData(s)
         Verifier(args.btc_rpc, args.bridge_address).verify_request(r)
 
