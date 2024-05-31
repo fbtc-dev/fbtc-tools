@@ -16,12 +16,12 @@ FBTC_DEPLOYMENT = {
     },
     5000: { # 0x1338
         "name": "mnt",
-        "rpc": "https://mantle.drpc.org",
+        "rpc": "https://rpc.mantle.xyz",
         "bridge": "0xbee335BB44e75C4794a0b9B54E8027b111395943"
     },
     1: { # 0x1
         "name": "eth",
-        "rpc": "https://eth.drpc.org",
+        "rpc": "https://rpc.ankr.com/eth",
         "bridge": "0xbee335BB44e75C4794a0b9B54E8027b111395943"
     }
 }
