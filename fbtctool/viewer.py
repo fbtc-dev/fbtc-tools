@@ -11,7 +11,12 @@ class Viewer(object):
         if rpc_url is None:
             rpc_url = config.DEFAULT_ETH_RPC
         else:
-            rpc_url = get_evm_rpc(rpc_url)
+            for cfg in config.FBTC_DEPLOYMENT.values():
+                if rpc_url == cfg["name"]:
+                    rpc_url = cfg["rpc"]
+                    bridge_address = cfg["bridge"]
+                    break
+
         if bridge_address is None:
             bridge_address = config.DEFAULT_BRIDGE
 
@@ -56,6 +61,9 @@ class Viewer(object):
         return r, e
 
     def _addr_name(self, addr):
+        if addr is None:
+            return "None"
+        
         if len(self.factory.web3.eth.get_code(addr)) == 0:
             return f"{addr} EOA"
         else:
@@ -220,12 +228,16 @@ class Viewer(object):
                 with indent():
                     p(f"({i+1}) {module_addr}")
 
+                    USER_MANAGER_ROLE = None
                     try:
                         module = self.factory.contract(module_addr, "FBTCGovernorModule")
                         USER_MANAGER_ROLE = module.USER_MANAGER_ROLE()
                     except Exception as e:
+                        pass
+
+                    if USER_MANAGER_ROLE is None:
                         p(f"[!] {module_addr} is not a FBTCGovernorModule")
-                        return
+                        continue
                     
                     LOCKER_ROLE = module.LOCKER_ROLE()
                     FBTC_PAUSER_ROLE = module.FBTC_PAUSER_ROLE()
