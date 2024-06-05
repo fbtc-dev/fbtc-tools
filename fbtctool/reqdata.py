@@ -1,5 +1,8 @@
 import json
 
+from .utils import chain_name
+
+
 class FBTCRequest(object):
     OP = {
         0: "Nop",
@@ -46,9 +49,9 @@ class FBTCRequest(object):
         s += f"  op: {self.op} ({self.op_str})\n"
         s += f"  status: {self.status} ({self.status_str})\n"
         s += f"  nonce: {self.nonce}\n"
-        s += f"  srcChain: {self.src_chain.hex()}\n"
+        s += f"  srcChain: {chain_name(self.src_chain.hex())}\n"
         s += f"  srcAddress: {self._norm_addr(self.src_address)}\n"
-        s += f"  dstChain: {self.dst_chain.hex()}\n"
+        s += f"  dstChain: {chain_name(self.dst_chain.hex())}\n"
         s += f"  dstAddress: {self._norm_addr(self.dst_address)}\n"
         s += f"  amount: {self.amount}\n"
         s += f"  fee: {self.fee}\n"
@@ -63,12 +66,10 @@ class FBTCRequest(object):
     @property
     def status_str(self):
         return self.STATUS[self.status]
-    
+
 
 class RequestData(object):
-
     def __init__(self, raw_str: str) -> None:
-
         self.raw = json.loads(raw_str.strip())
         self.raw_data = self.raw["raw_data"]
 
@@ -89,9 +90,12 @@ class RequestData(object):
         self.chain_id = int(self.info["chain_id"], 16)
         self.request_hash = self.info["bridge_request_hash"]
 
-    def print(self):
-        print("from:", self.sender)
-        print("to:", self.to)
-        print("data:", self.data)
-        print("value:", self.value)
-        print("info:", self.info)
+    def __str__(self) -> str:
+        s = "RequestData(\n"
+        s += f"  from: {self.sender}\n"
+        s += f"  to: {self.to}\n"
+        s += f"  data: {self.data}\n"
+        s += f"  value: {self.value}\n"
+        s += f"  info: {self.info}\n"
+        s += ")"
+        return s

@@ -1,8 +1,7 @@
 from argparse import ArgumentParser
 
-from .verifier import Verifier, RequestData
+from .verifier import RequestData, Verifier
 from .viewer import Viewer
-from .utils import read_json
 
 
 def main():
@@ -35,19 +34,18 @@ def main():
         help="View the contract information.",
     )
     parser.add_argument(
-        "-r", 
-        "--request-file-path", 
-        help="Verify request data json file."
+        "-r", "--request-file-path", help="Verify request data json file."
     )
 
     args = parser.parse_args()
-    
+
     if args.view:
         Viewer(args.evm_rpc, args.bridge_address).print()
     elif args.request_file_path:
         s = open(args.request_file_path).read()
         r = RequestData(s)
         Verifier(args.btc_rpc, args.bridge_address).verify_request(r)
+
 
 if __name__ == "__main__":
     main()

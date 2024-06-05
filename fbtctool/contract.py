@@ -8,7 +8,6 @@ from . import config
 
 
 class ContractFunctionWrapper(object):
-
     _ignore_error = False
 
     def __init__(self, web3, func, sender) -> None:

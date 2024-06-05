@@ -4,19 +4,21 @@ from . import config
 from .btcrpc import BitcoinRPC
 from .contract import ContractFactory
 from .reqdata import FBTCRequest, RequestData
-from .utils import get_bridge, get_web3, get_btc_rpc
+from .utils import get_bridge, get_btc_rpc, get_web3
 
-REQUEST_EVENT = HexBytes("903c4021d4469fbbdf338ec3409a975e2ccbd3990776eab0750c28a16617d780")
+REQUEST_EVENT = HexBytes(
+    "903c4021d4469fbbdf338ec3409a975e2ccbd3990776eab0750c28a16617d780"
+)
+
 
 class Verifier(object):
-
     def __init__(self, btc_rpc=None, bridge_addr=None) -> None:
-        if btc_rpc == None:
+        if btc_rpc is None:
             btc_rpc = config.DEFAULT_BTC_RPC
         else:
             btc_rpc = get_btc_rpc(btc_rpc)
 
-        if bridge_addr == None:
+        if bridge_addr is None:
             self.bridge_addr = config.DEFAULT_BRIDGE
         else:
             self.bridge_addr = bridge_addr
@@ -25,11 +27,7 @@ class Verifier(object):
 
     def log(self, check_item: str, result, true_msg: str = "Yes", false_msg=None):
         self._check_index += 1
-        flag = ({
-            True: "[OK]",
-            False: "[!!]",
-            None: "[--]"
-        })[result]
+        flag = ({True: "[OK]", False: "[!!]", None: "[--]"})[result]
         if result or false_msg is None:
             msg = true_msg
         else:
@@ -45,22 +43,17 @@ class Verifier(object):
         self.bridge = self.factory.contract(self.bridge_addr, "FireBridge")
 
     def _get_fbtc_request(self, chain_id, req_hash) -> FBTCRequest:
-       bridge = get_bridge(chain_id, self.bridge_addr)
-       return FBTCRequest(
-            req_hash,
-            bridge.getRequestByHash(req_hash)
-        )
+        bridge = get_bridge(chain_id, self.bridge_addr)
+        return FBTCRequest(req_hash, bridge.getRequestByHash(req_hash))
 
     def verify_request(self, data: RequestData):
-        data.print()
-
+        print(data)
         self._reset_context(data.chain_id)
 
-
-        if 'add_cross_chain_request_tx_ids' in data.info:
+        if "add_cross_chain_request_tx_ids" in data.info:
             self.verify_crosschain(data)
             return
-        
+
         req = self._get_fbtc_request(data.chain_id, data.request_hash)
         print(req)
 
@@ -68,6 +61,8 @@ class Verifier(object):
             self.verify_mint(data, req)
         elif req.op_str == "Burn":
             self.verify_burn(data, req)
+        elif req.op_str == "CrosschainRequest":
+            self.verify_crosschain(data)
         else:
             print("Unexpected request data")
             print(data)
@@ -81,7 +76,7 @@ class Verifier(object):
         self.log(
             f"{name} transaction confirmed",
             tx_number <= finalized_number,
-            f"{cur_number - tx_number} confirmations"
+            f"{cur_number - tx_number} confirmations",
         )
         event_found = False
         for log in rcpt.logs:
@@ -90,25 +85,20 @@ class Verifier(object):
                     if log.address == self.bridge_addr:
                         event_found = True
                         break
-        
+
         self.log(f"{name} Transaction matches the request", event_found, "Yes")
 
     def verify_mint(self, data: RequestData, req: FBTCRequest):
-
         self.log(
-            "The signing tx is calling to Minter contract", 
+            "The signing tx is calling to Minter contract",
             data.to.lower() == self.bridge.minter().lower(),
-            data.to
+            data.to,
         )
+        self.log("The signing tx's value is 0", data.value == 0, data.value)
         self.log(
-            "The signing tx's value is 0", 
-            data.value == 0,
-            data.value
-        )
-        self.log(
-            "The signing tx's selector is confirmMintRequest(0x2bf90baa)", 
+            "The signing tx's selector is confirmMintRequest(0x2bf90baa)",
             data.data[:8] == "2bf90baa",
-            data.data[:8]
+            data.data[:8],
         )
 
         req_txid = data.info["add_mint_request_tx_id"]
@@ -127,11 +117,12 @@ class Verifier(object):
         vout = int.from_bytes(req.extra[32:64], "big")
 
         self.log(
-            "BTC Deposit txid from data equals to the one from AddMintRequest", 
-            data_btc_txid == btc_txid, 
+            "BTC Deposit txid from data equals to the one from AddMintRequest",
+            data_btc_txid == btc_txid,
             data_btc_txid,
-            f"{data_btc_txid} vs {btc_txid}")
-   
+            f"{data_btc_txid} vs {btc_txid}",
+        )
+
         btc_tx = self.btcrpc.getrawtransaction(btc_txid)
 
         utxo = btc_tx["vout"][vout]
@@ -161,90 +152,91 @@ class Verifier(object):
         )
 
     def verify_burn(self, data: RequestData, req: FBTCRequest):
-
         req_txid = data.info["add_burn_request_tx_id"]
-    
+
         print("AddBurnRequest txid:", req_txid)
         self._eth_tx_check("AddBurnRequest", data.chain_id, req.hash, req_txid)
         self.log("Request op is Burn", req.op == 2, req.op_str)
         self.log("Request status is pending", req.status == 1, req.status_str)
 
         self.log(
-            "Request amount equals BTC transfer amount", 
-            data.value == req.amount, 
+            "Request amount equals BTC transfer amount",
+            data.value == req.amount,
             data.value,
-            f"{req.amount/1e8} vs {data.value/1e8} BTC"
+            f"{req.amount/1e8} vs {data.value/1e8} BTC",
         )
 
-        req_to_addr = req.dst_address.decode('utf-8')
+        req_to_addr = req.dst_address.decode("utf-8")
         self.log(
-            "Request withdrawal address equals BTC transfer address", 
-            data.to == req_to_addr, 
+            "Request withdrawal address equals BTC transfer address",
+            data.to == req_to_addr,
             f"{req_to_addr}",
-            f"{req_to_addr} vs {data.to}"
+            f"{req_to_addr} vs {data.to}",
         )
+
+    def _get_custom_value(self, data: RequestData, name: str):
+        for item in data.raw["customs"]:
+            if name in item:
+                return item[name][0]
+        return None
 
     def verify_crosschain(self, data: RequestData):
-
         self.log(
-            "The signing tx is calling to Minter contract", 
+            "The signing tx is calling to Minter contract",
             data.to.lower() == self.bridge.minter().lower(),
-            data.to
+            data.to,
         )
+        self.log("The signing tx's value is 0", data.value == 0, data.value)
+
+        selector = data.data[:8]
+
+        BATCH = "dfcf4559"
+        CONFIRM = "1d710bd1"
+
         self.log(
-            "The signing tx's value is 0", 
-            data.value == 0,
-            data.value
-        )
-        self.log(
-            "The signing tx's selector is batchConfirmCrosschainRequest (0xdfcf4559) or confirmMintRequest (0x2bf90baa)", 
-            data.data[:8] in ["dfcf4559", "0x2bf90baa"],
-            data.data[:8]
+            "The signing tx's selector is batchConfirmCrosschainRequest (0xdfcf4559) or confirmCrosschainRequest (0x1d710bd1)",
+            selector in [BATCH, CONFIRM],
+            selector,
         )
 
-        i = 0
-        while True:
-            src_chain_key = f"params.req.{i}.srcChain"
-            dst_chain_key = f"params.req.{i}.dstChain"
-            req_key = f"params.req.{i}.extra"
-
-            src_chain = None
-            req_hash = None
-
-            for item in data.raw["customs"]:
-                if src_chain_key in item:
-                    src_chain = item[src_chain_key][0]
-                if dst_chain_key in item:
-                    dst_chain = item[dst_chain_key][0]
-                if req_key in item:
-                    req_hash = '0x' + item[req_key][0]
-
-            if src_chain is None:
-                break
-
-            src_chain_id = int(src_chain, 16)
-            dst_chain_id = int(dst_chain, 16)
-            assert src_chain_id in config.FBTC_DEPLOYMENT, "Unknown chain"
-
-            # same address on src and dst.
-            src_bridge = get_bridge(src_chain_id, self.bridge_addr) 
-            dst_bridge = get_bridge(dst_chain_id, self.bridge_addr) 
-            req =  FBTCRequest(
-                req_hash,
-                src_bridge.getRequestByHash(req_hash)
-            )
-
-            print(req)
-
-            confirmation_hash = dst_bridge.crosschainRequestConfirmation(req_hash)
-            self.log(
-                "Request not confirmed on target chain:",
-                confirmation_hash == b"\x00" * 32,
-                confirmation_hash.hex()
-            )
-            
+        if selector == CONFIRM:
             # TODO:
-            # req_txid = None
-            # self._eth_tx_check("AddCrosschainRequest", src_chain_id, req_hash, req_txid)
+            txid = data.info["add_burn_request_tx_id"]
+            self._verify_crosschain_request(
+                self._get_custom_value(data, "params.req.srcChain"),
+                self._get_custom_value(data, "params.req.extra"),
+                txid,
+            )
+        else:
+            i = 0
+            while True:
+                src_chain_key = f"params.req.{i}.srcChain"
+                req_key = f"params.req.{i}.extra"
 
-            i += 1
+                src_chain = self._get_custom_value(data, src_chain_key)
+                if src_chain is None:
+                    break
+
+                txid = None  # TODO:
+                self._verify_crosschain_request(
+                    src_chain, self._get_custom_value(data, req_key), txid
+                )
+                i += 1
+
+    def _verify_crosschain_request(self, src_chain, req_hash, txid):
+        src_chain_id = int(src_chain, 16)
+        assert src_chain_id in config.FBTC_DEPLOYMENT, "Unknown chain"
+
+        src_bridge = get_bridge(src_chain_id, self.bridge_addr)
+        req = FBTCRequest(req_hash, src_bridge.getRequestByHash(req_hash))
+        print(req)
+
+        dst_bridge = get_bridge(int(req.dst_chain.hex(), 16), self.bridge_addr)
+        confirmation_hash = dst_bridge.crosschainRequestConfirmation(req_hash)
+        self.log(
+            "Request not confirmed on target chain:",
+            confirmation_hash == b"\x00" * 32,
+            confirmation_hash.hex(),
+        )
+        if txid:
+            self._eth_tx_check("AddCrosschainRequest", src_chain_id, req_hash, txid)
