@@ -50,7 +50,7 @@ class Verifier(object):
         print(data)
         self._reset_context(data.chain_id)
 
-        if "add_cross_chain_request_tx_ids" in data.info:
+        if "cross_chain_source_tx_infos" in data.info:
             self.verify_crosschain(data)
             return
 
@@ -200,28 +200,17 @@ class Verifier(object):
         )
 
         if selector == CONFIRM:
-            # TODO:
-            txid = data.info["add_burn_request_tx_id"]
             self._verify_crosschain_request(
-                self._get_custom_value(data, "params.req.srcChain"),
-                self._get_custom_value(data, "params.req.extra"),
-                txid,
+                data.info["chain_id"],
+                data.info["bridge_request_hash"],
+                data.info["add_cross_chain_request_tx_id"],
             )
         else:
-            i = 0
-            while True:
-                src_chain_key = f"params.req.{i}.srcChain"
-                req_key = f"params.req.{i}.extra"
-
-                src_chain = self._get_custom_value(data, src_chain_key)
-                if src_chain is None:
-                    break
-
-                txid = None  # TODO:
-                self._verify_crosschain_request(
-                    src_chain, self._get_custom_value(data, req_key), txid
-                )
-                i += 1
+            tx_infos = data.info["cross_chain_source_tx_infos"]
+            for info in tx_infos:
+                req_hash = info["bridge_request_hash"]
+                txid = info["add_cross_chain_request_tx_id"]
+                self._verify_crosschain_request(data.info["chain_id"], req_hash, txid)
 
     def _verify_crosschain_request(self, src_chain, req_hash, txid):
         src_chain_id = int(src_chain, 16)
