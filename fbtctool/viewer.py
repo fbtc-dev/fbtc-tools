@@ -32,14 +32,14 @@ class Viewer(object):
         self.FEE_RATE_BASE = 1_000_000
         self.dec = 8
 
-    def _print_list(self, title="", items=[], is_addr=True):
+    def _print_list(self, title="", items=[], is_addr=True, with_balance=False):
         if title:
             p(title)
         if items:
             with indent():
                 for i, s in enumerate(items):
                     if is_addr:
-                        s = self._addr_name(s)
+                        s = self._addr_name(s, with_balance)
                     p(f"({i+1}) {s}")
 
     def _call_if_error(self, func):
@@ -54,12 +54,16 @@ class Viewer(object):
         ContractFunctionWrapper._ignore_error = tmp
         return r, e
 
-    def _addr_name(self, addr):
+    def _addr_name(self, addr, with_balance=False):
         if addr is None:
             return "None"
 
         if len(self.factory.web3.eth.get_code(addr)) == 0:
-            return f"{addr} EOA"
+            if with_balance:
+                eth = self.factory.web3.eth.get_balance(addr)
+                return f"{addr} EOA, Balance {eth/1e18} ({eth})"
+            else:
+                return f"{addr} EOA"
         else:
             safe = self.factory.contract(addr, "Safe")
 
@@ -138,11 +142,14 @@ class Viewer(object):
             CROSSCHAIN_ROLE = self.minter.CROSSCHAIN_ROLE()
             MINT_ROLE = self.minter.MINT_ROLE()
 
-            self._print_list("Minting:", self.minter.getRoleMembers(MINT_ROLE))
-            self._print_list("Burning:", self.minter.getRoleMembers(BURN_ROLE))
-            self._print_list(
-                "Cross-chaining:", self.minter.getRoleMembers(CROSSCHAIN_ROLE)
-            )
+            def pb(name, role):
+                self._print_list(
+                    name, self.minter.getRoleMembers(role), with_balance=True
+                )
+
+            pb("Minting:", MINT_ROLE)
+            pb("Burning:", BURN_ROLE)
+            pb("Cross-chaining:", CROSSCHAIN_ROLE)
 
     def _print_fee_cfg(self, cfg):
         if cfg is None:
