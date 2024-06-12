@@ -1,6 +1,7 @@
 from . import config
 from .contract import ContractFactory, ContractFunctionWrapper
-from .utils import Printer, chain_name
+from .reqdata import FBTCRequest
+from .utils import Printer, chain_name, get_bridge
 
 printer = Printer()
 p = printer.print
@@ -288,3 +289,29 @@ class Viewer(object):
         self.print_fee()
         printer.line()
         self.print_safe()
+
+    def print_requests(self, count=20):
+        nonce = self.bridge.nonce()
+        end = nonce - 1
+        start = end - count + 1
+        if start < 0:
+            start = 0
+        reqs = self.bridge.getRequestsByIdRange(start, end)
+        reqs = [FBTCRequest(None, i) for i in reqs][::-1]
+        for r in reqs:
+            r.hash = self.bridge.requestHashes(r.nonce).hex()
+            p(f">>>> {r.nonce} <<<<")
+            if r.status == 1:  # Pending
+                p("!!! Pending !!!")
+
+            if r.op == 3:  # CrosschainRequest
+                dst_bridge = get_bridge(r.dst_chain_id, self.bridge.address)
+                dst_hash = dst_bridge.crosschainRequestConfirmation(r.hash).hex()
+                if dst_hash == "0" * 32:
+                    p("!!! Pending !!!")
+                else:
+                    p(f"Confirmed: {dst_hash}")
+
+            p("-" * 10)
+            p(str(r))
+            printer.line()

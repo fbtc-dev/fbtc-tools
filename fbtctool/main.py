@@ -33,6 +33,14 @@ def main():
         action="store_true",
         help="View the contract information.",
     )
+
+    parser.add_argument(
+        "-l",
+        "--list-requests",
+        type=int,
+        help="List the recent request information of the bridge.",
+    )
+
     parser.add_argument(
         "-r", "--request-file-path", help="Verify request data json file."
     )
@@ -41,6 +49,8 @@ def main():
 
     if args.view:
         Viewer(args.evm_rpc, args.bridge_address).print()
+    elif args.list_requests:
+        Viewer(args.evm_rpc, args.bridge_address).print_requests(args.list_requests)
     elif args.request_file_path:
         s = open(args.request_file_path).read()
         r = RequestData(s)

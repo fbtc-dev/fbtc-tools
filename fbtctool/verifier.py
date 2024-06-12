@@ -214,8 +214,6 @@ class Verifier(object):
 
     def _verify_crosschain_request(self, src_chain, req_hash, txid):
         src_chain_id = int(src_chain, 16)
-        assert src_chain_id in config.FBTC_DEPLOYMENT, "Unknown chain"
-
         src_bridge = get_bridge(src_chain_id, self.bridge_addr)
         req = FBTCRequest(req_hash, src_bridge.getRequestByHash(req_hash))
         print(req)

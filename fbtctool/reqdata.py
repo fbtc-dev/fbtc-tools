@@ -67,6 +67,14 @@ class FBTCRequest(object):
     def status_str(self):
         return self.STATUS[self.status]
 
+    @property
+    def src_chain_id(self):
+        return int(self.src_chain.hex(), 16)
+
+    @property
+    def dst_chain_id(self):
+        return int(self.dst_chain.hex(), 16)
+
 
 class RequestData(object):
     def __init__(self, raw_str: str) -> None:
