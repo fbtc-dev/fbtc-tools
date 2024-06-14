@@ -16,7 +16,8 @@ class Viewer(object):
             for cfg in config.FBTC_DEPLOYMENT.values():
                 if rpc_url == cfg["name"]:
                     rpc_url = cfg["rpc"]
-                    bridge_address = cfg["bridge"]
+                    if bridge_address is None:
+                        bridge_address = cfg["bridge"]
                     break
 
         if bridge_address is None:

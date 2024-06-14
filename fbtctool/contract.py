@@ -78,7 +78,7 @@ class ContractWrapper(object):
 
     def __init__(self, web3, address, abi=None, sender=None) -> None:
         self.web3 = web3
-        self.address = self.web3.toChecksumAddress(address)
+        self.address = self.web3.to_checksum_address(address)
 
         if self.address not in ContractWrapper._CONTRACT_CHECK_CACHE:
             assert (
