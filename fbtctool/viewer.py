@@ -30,6 +30,7 @@ class Viewer(object):
         self.minter = self.factory.contract(self.bridge.minter(), "FBTCMinter")
 
         self.dst_chains = []
+        self.merchants = []
         self.FEE_RATE_BASE = 1_000_000
         self.dec = 8
 
@@ -103,6 +104,7 @@ class Viewer(object):
             )
 
             users = self.bridge.getQualifiedUsers()
+            self.merchants = users
 
             p(f"Qualified Users: {len(users)}")
             for i, user in enumerate(users):
@@ -116,6 +118,12 @@ class Viewer(object):
                             p(f"BTC Withdrawal Address: {info[2]}")
 
     def _to_btc(self, amount):
+        if amount == 2**256 - 1:
+            return "Uint256.MAX"
+
+        if amount == 2**224 - 1:
+            return "Uint224.MAX"
+
         return f"{amount / (10**self.dec)} FBTC"
 
     def print_fbtc(self):
@@ -157,15 +165,13 @@ class Viewer(object):
             return
 
         with indent():
-            p(f"Minimal: {self._to_btc(cfg[0])}")
+            max, min, tiers = cfg
+            p(f"Maximum: {self._to_btc(max)}")
+            p(f"Minimum: {self._to_btc(min)}")
             p("Fee Rate Tiers:")
             with indent():
-                for tier in cfg[1]:
-                    amount = tier[0]
-                    if amount == 2**224 - 1:
-                        amount = "MAX"
-                    else:
-                        amount = self._to_btc(tier[0])
+                for tier in tiers:
+                    amount = self._to_btc(tier[0])
 
                     p(f"< {amount}: {tier[1] * 100/ self.FEE_RATE_BASE} %")
 
@@ -183,11 +189,11 @@ class Viewer(object):
             CROSS_OP = 3
 
             fee = self.fee_model.getDefaultFeeConfig(MINT_OP)
-            p("Mint:")
+            p("Mint (Default):")
             self._print_fee_cfg(fee)
 
             fee = self.fee_model.getDefaultFeeConfig(BURN_OP)
-            p("Burn:")
+            p("Burn (Default):")
             self._print_fee_cfg(fee)
 
             fee = self.fee_model.getDefaultFeeConfig(CROSS_OP)
@@ -200,7 +206,16 @@ class Viewer(object):
                         lambda: self.fee_model.getCrosschainFeeConfig(target)
                     )
                     if e is None:
-                        p(f"Cross-chain to {target.hex()}:")
+                        p(f"Customized cross-chaining fee for {target.hex()}:")
+                        self._print_fee_cfg(fee)
+
+            if self.merchants:
+                for user in self.merchants:
+                    fee, e = self._call_if_error(
+                        lambda: self.fee_model.getUserBurnFeeConfig(user)
+                    )
+                    if e is None:
+                        p(f"Customized burning fee for {user}:")
                         self._print_fee_cfg(fee)
 
     def print_safe(self):
@@ -237,19 +252,22 @@ class Viewer(object):
                 with indent():
                     p(f"({i+1}) {module_addr}")
 
-                    USER_MANAGER_ROLE = None
+                    CHAIN_MANAGER_ROLE = None
                     try:
                         module = self.factory.contract(
                             module_addr, "FBTCGovernorModule"
                         )
-                        USER_MANAGER_ROLE = module.USER_MANAGER_ROLE()
+                        CHAIN_MANAGER_ROLE, e = self._call_if_error(
+                            module.CHAIN_MANAGER_ROLE
+                        )
                     except Exception:
                         pass
 
-                    if USER_MANAGER_ROLE is None:
+                    if CHAIN_MANAGER_ROLE is None:
                         p(f"[!] {module_addr} is not a FBTCGovernorModule")
                         continue
 
+                    USER_MANAGER_ROLE = module.USER_MANAGER_ROLE()
                     LOCKER_ROLE = module.LOCKER_ROLE()
                     FBTC_PAUSER_ROLE = module.FBTC_PAUSER_ROLE()
                     BRIDGE_PAUSER_ROLE = module.BRIDGE_PAUSER_ROLE()
