@@ -1,4 +1,7 @@
-BTC_RPC = {"btc": "https://bitcoin.drpc.org", "xtn": "https://bitcoin-testnet.drpc.org"}
+BTC_RPC = {
+    "btc": "https://bitcoin-mainnet.g.allthatnode.com/archive/json_rpc",
+    "xtn": "https://bitcoin-testnet.g.allthatnode.com/archive/json_rpc",
+}
 
 FBTC_DEPLOYMENT = {
     11155111: {  # 0xaa36a7
