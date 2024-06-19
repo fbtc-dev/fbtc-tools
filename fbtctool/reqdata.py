@@ -96,7 +96,7 @@ class RequestData(object):
 
         self.info = json.loads(note)["bridge_tx_info"]
         self.chain_id = int(self.info["chain_id"], 16)
-        self.request_hash = self.info["bridge_request_hash"]
+        self.request_hash = self.info.get("bridge_request_hash")
 
     def __str__(self) -> str:
         s = "RequestData(\n"

@@ -50,12 +50,13 @@ class Verifier(object):
         print(data)
         self._reset_context(data.chain_id)
 
-        if "cross_chain_source_tx_infos" in data.info:
+        if data.request_hash:
+            req = self._get_fbtc_request(data.chain_id, data.request_hash)
+            print(req)
+        else:
+            # BatchConfirm
             self.verify_crosschain(data)
             return
-
-        req = self._get_fbtc_request(data.chain_id, data.request_hash)
-        print(req)
 
         if req.op_str == "Mint":
             self.verify_mint(data, req)
@@ -208,7 +209,7 @@ class Verifier(object):
         else:
             tx_infos = data.info["cross_chain_source_tx_infos"]
             for info in tx_infos:
-                req_hash = info["bridge_request_hash"]
+                req_hash = "0x" + info["bridge_request_hash"]
                 txid = info["add_cross_chain_request_tx_id"]
                 self._verify_crosschain_request(data.info["chain_id"], req_hash, txid)
 
