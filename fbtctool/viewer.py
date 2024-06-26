@@ -325,8 +325,8 @@ class Viewer(object):
         reqs = self.bridge.getRequestsByIdRange(start, end)
         reqs = [FBTCRequest(None, i) for i in reqs][::-1]
         for r in reqs:
-            r.hash = self.bridge.requestHashes(r.nonce).hex()
-            p(f">>>> {r.nonce} <<<<")
+            r.hash = "0x" + self.bridge.requestHashes(r.nonce).hex()
+            p(f">>>> {r.nonce} {r.hash} <<<<")
             if r.status == 1:  # Pending
                 p("!!! Pending !!!")
 
