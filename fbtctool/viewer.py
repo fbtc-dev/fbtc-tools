@@ -210,13 +210,15 @@ class Viewer(object):
                         self._print_fee_cfg(fee)
 
             if self.merchants:
-                for user in self.merchants:
-                    fee, e = self._call_if_error(
-                        lambda: self.fee_model.getUserBurnFeeConfig(user)
-                    )
-                    if e is None:
-                        p(f"Customized burning fee for {user}:")
-                        self._print_fee_cfg(fee)
+                p("Customized burning fee:")
+                with indent():
+                    for user in self.merchants:
+                        fee, e = self._call_if_error(
+                            lambda: self.fee_model.getUserBurnFeeConfig(user)
+                        )
+                        if e is None:
+                            p(f"{user}:")
+                            self._print_fee_cfg(fee)
 
     def print_safe(self):
         addr = self.bridge.owner()
