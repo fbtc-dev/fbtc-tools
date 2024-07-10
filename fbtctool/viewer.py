@@ -1,7 +1,10 @@
+from hexbytes import HexBytes
+
 from . import config
 from .contract import ContractFactory, ContractFunctionWrapper
 from .reqdata import FBTCRequest
 from .utils import Printer, chain_name, get_bridge
+from .verifier import REQUEST_EVENT
 
 printer = Printer()
 p = printer.print
@@ -33,6 +36,10 @@ class Viewer(object):
         self.merchants = []
         self.FEE_RATE_BASE = 1_000_000
         self.dec = 8
+
+    @property
+    def web3(self):
+        return self.factory.web3
 
     def _print_list(self, title="", items=[], is_addr=True, with_balance=False):
         if title:
@@ -318,28 +325,72 @@ class Viewer(object):
         printer.line()
         self.print_safe()
 
-    def print_requests(self, count=20):
+    def print_requests(self, count=5, user: str = None, range=100):
+        if user:
+            self.print_user_info(user)
+
         nonce = self.bridge.nonce()
         end = nonce - 1
-        start = end - count + 1
+        start = end - range + 1
         if start < 0:
             start = 0
         reqs = self.bridge.getRequestsByIdRange(start, end)
         reqs = [FBTCRequest(None, i) for i in reqs][::-1]
+
+        i = 0
         for r in reqs:
+            if user:
+                user = user.lower()
+                if user not in [r.normalized_dst_addr, r.normalized_src_addr]:
+                    continue
+
+            if i == count:
+                break
+            i += 1
+
             r.hash = "0x" + self.bridge.requestHashes(r.nonce).hex()
-            p(f">>>> {r.nonce} {r.hash} <<<<")
-            if r.status == 1:  # Pending
-                p("!!! Pending !!!")
-
-            if r.op == 3:  # CrosschainRequest
-                dst_bridge = get_bridge(r.dst_chain_id, self.bridge.address)
-                dst_hash = dst_bridge.crosschainRequestConfirmation(r.hash).hex()
-                if dst_hash == "0" * 32:
-                    p("!!! Pending !!!")
-                else:
-                    p(f"Confirmed: {dst_hash}")
-
-            p("-" * 10)
-            p(str(r))
+            self._print_req(r)
             printer.line()
+
+    def print_user_info(self, user_addr):
+        user_addr = self.web3.to_checksum_address(user_addr)
+        info = self.bridge.getQualifiedUserInfo(user_addr)
+        assert info
+        p(f"EVM Address: {self._addr_name(user_addr)}")
+        if not info[1]:
+            print("Not qualified")
+            return
+        with indent():
+            p(f"Locked: {info[0]}")
+            p(f"BTC Deposit Address: {info[1]}")
+            p(f"BTC Withdrawal Address: {info[2]}")
+
+    def _print_req(self, r: FBTCRequest):
+        p(f">>>> {r.nonce} {r.hash} <<<<")
+        if r.status == 1:  # Pending
+            p("!!! Pending !!!")
+        elif r.op == 3:  # CrosschainRequest
+            dst_bridge = get_bridge(r.dst_chain_id, self.bridge.address)
+            dst_hash = dst_bridge.crosschainRequestConfirmation(r.hash).hex()
+            if dst_hash == "0" * 64:
+                p("!!! Pending !!!")
+            else:
+                p(f"Confirmed: {dst_hash}")
+        else:
+            p("Confirmed")
+
+        p("-" * 10)
+        p(str(r))
+
+    def print_request(self, hash: str):
+        r = self.bridge.getRequestByHash(hash)
+        r = FBTCRequest(hash, r)
+        self._print_req(r)
+
+    def print_request_in_tx(self, txid: str):
+        rcpt = self.web3.eth.get_transaction_receipt(txid)
+
+        for log in rcpt.logs:
+            if HexBytes(log.topics[0]) == REQUEST_EVENT:
+                req_hash = HexBytes(log.topics[1]).hex()
+                self.print_request(req_hash)

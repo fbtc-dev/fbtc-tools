@@ -31,7 +31,7 @@ def main():
         "-v",
         "--view",
         action="store_true",
-        help="View the contract information.",
+        help="View all the contract information of FBTC.",
     )
 
     parser.add_argument(
@@ -42,15 +42,41 @@ def main():
     )
 
     parser.add_argument(
-        "-r", "--request-file-path", help="Verify request data json file."
+        "-u",
+        "--user",
+        help="Get user information.",
+    )
+
+    parser.add_argument(
+        "-r",
+        "--req-hash",
+        help="Print the request information by hash.",
+    )
+
+    parser.add_argument(
+        "-t",
+        "--txid",
+        help="Print the FBTC request in the trasaction.",
+    )
+
+    parser.add_argument(
+        "-f", "--request-file-path", help="Verify request data json file."
     )
 
     args = parser.parse_args()
 
     if args.view:
         Viewer(args.evm_rpc, args.bridge_address).print()
+    elif args.req_hash:
+        Viewer(args.evm_rpc, args.bridge_address).print_request(args.req_hash)
+    elif args.txid:
+        Viewer(args.evm_rpc, args.bridge_address).print_request_in_tx(args.txid)
     elif args.list_requests:
-        Viewer(args.evm_rpc, args.bridge_address).print_requests(args.list_requests)
+        Viewer(args.evm_rpc, args.bridge_address).print_requests(
+            args.list_requests, args.user
+        )
+    elif args.user:
+        Viewer(args.evm_rpc, args.bridge_address).print_user_info(args.user)
     elif args.request_file_path:
         s = open(args.request_file_path).read()
         r = RequestData(s)

@@ -9,8 +9,26 @@ $ python -m fbtctool.main -h
 
 # Usage
 
-## View the full protocol configuration
+## Print request / user info
+
+```sh
+# Print user information
+$ python -m fbtctool.main -e seth -u 0xfed1fd7e9bbe5032c872b1a162ba2d88548c0af5
+
+# Print latest requests
+$ python -m fbtctool.main -e seth -l 4
+# Print latest requests related to the user
+$ python -m fbtctool.main -e seth -l 4 -u 0xfed1fd7e9bbe5032c872b1a162ba2d88548c0af5
+
+# Print request by request hash
+$ python -m fbtctool.main -r 0xBA19C3EE6D5B533239F22026B652E346D9841618B55C84E32D4804F112BCC618 -e seth0xc861d9df11c38855910fdba092412e370975b98be4e06f6064fbea10fd9a3c6e
+
+# Print requests in the transaction
+$ python -m fbtctool.main -t 0xc861d9df11c38855910fdba092412e370975b98be4e06f6064fbea10fd9a3c6e -e seth
 ```
+
+## View the full protocol configuration
+```sh
 $ python -m fbtctool.main -e seth -v
  Current Chain: Ethereum Sepolia Testnet (11155111)
  ================================================================================
@@ -38,8 +56,8 @@ $ python -m fbtctool.main -e seth -v
 1. Save the request data into local file.
 
 2. Run fbtctool
-```
-$ python -m fbtctool.main -r ./input.json
+```sh
+$ python -m fbtctool.main -f ./input.json
 from: 0xde3d643b54ed4ae94ffb437e90a80d1b5254d3d5
 to: 0x80b534D4bB3D809FbDA809DCB26D3f220634AED7
 data: 2bf90baaaa4f000f815a82d5fc4bf9ad26b3fb180d407e541afc0208ede7b14dff27039e

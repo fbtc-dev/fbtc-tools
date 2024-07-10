@@ -49,10 +49,10 @@ class FBTCRequest(object):
         s += f"  op: {self.op} ({self.op_str})\n"
         s += f"  status: {self.status} ({self.status_str})\n"
         s += f"  nonce: {self.nonce}\n"
-        s += f"  srcChain: {chain_name(self.src_chain.hex())}\n"
-        s += f"  srcAddress: {self._norm_addr(self.src_address)}\n"
-        s += f"  dstChain: {chain_name(self.dst_chain.hex())}\n"
-        s += f"  dstAddress: {self._norm_addr(self.dst_address)}\n"
+        s += f"  srcChain: {self.src_chain_name}\n"
+        s += f"  srcAddress: {self.normalized_src_addr}\n"
+        s += f"  dstChain: {self.dst_chain_name}\n"
+        s += f"  dstAddress: {self.normalized_dst_addr}\n"
         s += f"  amount: {self.amount}\n"
         s += f"  fee: {self.fee}\n"
         s += f"  extra: {self.extra.hex()}\n"
@@ -74,6 +74,22 @@ class FBTCRequest(object):
     @property
     def dst_chain_id(self):
         return int(self.dst_chain.hex(), 16)
+
+    @property
+    def src_chain_name(self):
+        return chain_name(self.src_chain.hex())
+
+    @property
+    def dst_chain_name(self):
+        return chain_name(self.dst_chain.hex())
+
+    @property
+    def normalized_src_addr(self):
+        return self._norm_addr(self.src_address)
+
+    @property
+    def normalized_dst_addr(self):
+        return self._norm_addr(self.dst_address)
 
 
 class RequestData(object):
