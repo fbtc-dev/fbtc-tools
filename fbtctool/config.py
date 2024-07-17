@@ -19,6 +19,11 @@ FBTC_DEPLOYMENT = {
         "rpc": "https://rpc.mantle.xyz",
         "bridge": "0xbee335BB44e75C4794a0b9B54E8027b111395943",
     },
+    56: {  # 0x1
+        "name": "bsc",
+        "rpc": "https://rpc.ankr.com/bsc",
+        "bridge": "0xbee335BB44e75C4794a0b9B54E8027b111395943",
+    },
     1: {  # 0x1
         "name": "eth",
         "rpc": "https://rpc.ankr.com/eth",

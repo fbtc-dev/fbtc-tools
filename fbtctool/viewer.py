@@ -105,7 +105,7 @@ class Viewer(object):
             p(f"Current Chain: {chain_name(self.bridge.chain().hex())}")
             self.dst_chains = self.bridge.getValidDstChains()
             self._print_list(
-                "Cross-chain whilist:",
+                "Cross-chain white list:",
                 [chain_name(chain.hex()) for chain in self.dst_chains],
                 False,
             )
