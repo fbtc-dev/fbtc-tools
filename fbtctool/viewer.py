@@ -203,29 +203,33 @@ class Viewer(object):
             p("Burn (Default):")
             self._print_fee_cfg(fee)
 
+            if not self.merchants:
+                self.merchants = self.bridge.getQualifiedUsers()
+
+            for user in self.merchants:
+                fee, e = self._call_if_error(
+                    lambda: self.fee_model.getUserBurnFeeConfig(user)
+                )
+                if e is None:
+                    with indent():
+                        p(f"-- {user}:")
+                        self._print_fee_cfg(fee)
+
             fee = self.fee_model.getDefaultFeeConfig(CROSS_OP)
             p("Cross-chain (Default):")
             self._print_fee_cfg(fee)
 
-            if self.dst_chains:
-                for target in self.dst_chains:
-                    fee, e = self._call_if_error(
-                        lambda: self.fee_model.getCrosschainFeeConfig(target)
-                    )
-                    if e is None:
-                        p(f"Customized cross-chaining fee for {target.hex()}:")
-                        self._print_fee_cfg(fee)
+            if not self.dst_chains:
+                self.dst_chains = self.bridge.getValidDstChains()
 
-            if self.merchants:
-                p("Customized burning fee:")
-                with indent():
-                    for user in self.merchants:
-                        fee, e = self._call_if_error(
-                            lambda: self.fee_model.getUserBurnFeeConfig(user)
-                        )
-                        if e is None:
-                            p(f"{user}:")
-                            self._print_fee_cfg(fee)
+            for target in self.dst_chains:
+                fee, e = self._call_if_error(
+                    lambda: self.fee_model.getCrosschainFeeConfig(target)
+                )
+                if e is None:
+                    with indent():
+                        p(f"-- {chain_name(target.hex())}:")
+                        self._print_fee_cfg(fee)
 
     def print_safe(self):
         addr = self.bridge.owner()

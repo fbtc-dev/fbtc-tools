@@ -35,6 +35,41 @@ def main():
     )
 
     parser.add_argument(
+        "-vb",
+        "--view-bridge",
+        action="store_true",
+        help="View FireBridge information",
+    )
+
+    parser.add_argument(
+        "-vt",
+        "--view-token",
+        action="store_true",
+        help="View FBTC token information",
+    )
+
+    parser.add_argument(
+        "-vm",
+        "--view-minter",
+        action="store_true",
+        help="View FBTCMinter information",
+    )
+
+    parser.add_argument(
+        "-vf",
+        "--view-fee-model",
+        action="store_true",
+        help="View FeeModel information",
+    )
+
+    parser.add_argument(
+        "-vg",
+        "--view-governance",
+        action="store_true",
+        help="View Governance information",
+    )
+
+    parser.add_argument(
         "-l",
         "--list-requests",
         type=int,
@@ -67,6 +102,16 @@ def main():
 
     if args.view:
         Viewer(args.evm_rpc, args.bridge_address).print()
+    elif args.view_bridge:
+        Viewer(args.evm_rpc, args.bridge_address).print_bridge()
+    elif args.view_token:
+        Viewer(args.evm_rpc, args.bridge_address).print_fbtc()
+    elif args.view_minter:
+        Viewer(args.evm_rpc, args.bridge_address).print_minter()
+    elif args.view_fee_model:
+        Viewer(args.evm_rpc, args.bridge_address).print_fee()
+    elif args.view_governance:
+        Viewer(args.evm_rpc, args.bridge_address).print_safe()
     elif args.req_hash:
         Viewer(args.evm_rpc, args.bridge_address).print_request(args.req_hash)
     elif args.txid:
