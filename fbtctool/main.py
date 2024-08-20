@@ -70,6 +70,12 @@ def main():
     )
 
     parser.add_argument(
+        "-gm",
+        "--governor-module",
+        help="FBTCGovernorModule address",
+    )
+
+    parser.add_argument(
         "-l",
         "--list-requests",
         type=int,
@@ -111,7 +117,12 @@ def main():
     elif args.view_fee_model:
         Viewer(args.evm_rpc, args.bridge_address).print_fee()
     elif args.view_governance:
-        Viewer(args.evm_rpc, args.bridge_address).print_safe()
+        if args.governor_module:
+            Viewer(args.evm_rpc, args.bridge_address).print_fbtc_module(
+                args.governor_module
+            )
+        else:
+            Viewer(args.evm_rpc, args.bridge_address).print_safe()
     elif args.req_hash:
         Viewer(args.evm_rpc, args.bridge_address).print_request(args.req_hash)
     elif args.txid:

@@ -82,28 +82,21 @@ class Printer(object):
         return _Indent()
 
 
-EVM_CHAIN_ID_TO_NAME = {
-    1: "Ethereum Mainnet",
-    56: "BNB Smart Chain",
-    11155111: "Ethereum Sepolia Testnet",
-    5000: "Mantle",
-    5003: "Mantle Sepolia Testnet",
-}
-
 FBTC_CHAIN_ID_TO_NAME = {
     "0100000000000000000000000000000000000000000000000000000000000000": "BTC Mainnet",
     "0110000000000000000000000000000000000000000000000000000000000000": "BTC XTN Testnet",
-    "0000000000000000000000000000000000000000000000000000000000000001": "Ethereum Mainnet",
-    "0000000000000000000000000000000000000000000000000000000000000038": "BNB Smart Chain",
-    "0000000000000000000000000000000000000000000000000000000000aa36a7": "Ethereum Sepolia Testnet",
-    "0000000000000000000000000000000000000000000000000000000000001388": "Mantle",
-    "000000000000000000000000000000000000000000000000000000000000138b": "Mantle Sepolia Testnet",
 }
+
+for chain_id in config.FBTC_DEPLOYMENT:
+    full_name = config.FBTC_DEPLOYMENT[chain_id]["full"]
+    chain_id_bytes32 = chain_id.to_bytes(32, "big").hex()
+    FBTC_CHAIN_ID_TO_NAME[chain_id_bytes32] = full_name
 
 
 def chain_name(chain_id):
     if type(chain_id) is int:
-        name = EVM_CHAIN_ID_TO_NAME.get(chain_id, "Unknown chain")
+        chain_id_bytes32 = chain_id.to_bytes(32, "big").hex()
     else:
-        name = FBTC_CHAIN_ID_TO_NAME.get(chain_id, "Unknown chain")
+        chain_id_bytes32 = chain_id
+    name = FBTC_CHAIN_ID_TO_NAME.get(chain_id_bytes32, "Unknown chain")
     return f"{name} ({chain_id})"

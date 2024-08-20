@@ -264,56 +264,54 @@ class Viewer(object):
             for i, module_addr in enumerate(modules):
                 with indent():
                     p(f"({i+1}) {module_addr}")
+                    self.print_fbtc_module(module_addr)
 
-                    CHAIN_MANAGER_ROLE = None
-                    try:
-                        module = self.factory.contract(
-                            module_addr, "FBTCGovernorModule"
-                        )
-                        CHAIN_MANAGER_ROLE, e = self._call_if_error(
-                            module.CHAIN_MANAGER_ROLE
-                        )
-                    except Exception:
-                        pass
+    def print_fbtc_module(self, module_addr):
+        CHAIN_MANAGER_ROLE = None
+        try:
+            module = self.factory.contract(module_addr, "FBTCGovernorModule")
+            CHAIN_MANAGER_ROLE, e = self._call_if_error(module.CHAIN_MANAGER_ROLE)
+        except Exception:
+            pass
 
-                    if CHAIN_MANAGER_ROLE is None:
-                        p(f"[!] {module_addr} is not a FBTCGovernorModule")
-                        continue
+        if CHAIN_MANAGER_ROLE is None:
+            p(f"[!] {module_addr} is not a FBTCGovernorModule")
+            return
 
-                    USER_MANAGER_ROLE = module.USER_MANAGER_ROLE()
-                    LOCKER_ROLE = module.LOCKER_ROLE()
-                    FBTC_PAUSER_ROLE = module.FBTC_PAUSER_ROLE()
-                    BRIDGE_PAUSER_ROLE = module.BRIDGE_PAUSER_ROLE()
-                    CHAIN_MANAGER_ROLE = module.CHAIN_MANAGER_ROLE()
-                    FEE_UPDATER_ROLE = module.FEE_UPDATER_ROLE()
-                    with indent():
-                        p("FBTCGovernorModule: ")
-                        p(f"Owner: {self._addr_name(module.owner())}")
-                        p(f"Pending Owner: {self._addr_name(module.pendingOwner())}")
-                        with indent():
-                            self._print_list(
-                                "Qualified User Managers:",
-                                module.getRoleMembers(USER_MANAGER_ROLE),
-                            )
-                            self._print_list(
-                                "FBTC Block-list Managers:",
-                                module.getRoleMembers(LOCKER_ROLE),
-                            )
-                            self._print_list(
-                                "FBTC Pauser:", module.getRoleMembers(FBTC_PAUSER_ROLE)
-                            )
-                            self._print_list(
-                                "FireBridge Pauser:",
-                                module.getRoleMembers(BRIDGE_PAUSER_ROLE),
-                            )
-                            self._print_list(
-                                "Cross-chain Targets Manager:",
-                                module.getRoleMembers(CHAIN_MANAGER_ROLE),
-                            )
-                            self._print_list(
-                                "Cross-chain Fee Updater:",
-                                module.getRoleMembers(FEE_UPDATER_ROLE),
-                            )
+        USER_MANAGER_ROLE = module.USER_MANAGER_ROLE()
+        LOCKER_ROLE = module.LOCKER_ROLE()
+        FBTC_PAUSER_ROLE = module.FBTC_PAUSER_ROLE()
+        BRIDGE_PAUSER_ROLE = module.BRIDGE_PAUSER_ROLE()
+        CHAIN_MANAGER_ROLE = module.CHAIN_MANAGER_ROLE()
+        FEE_UPDATER_ROLE = module.FEE_UPDATER_ROLE()
+        with indent():
+            p("FBTCGovernorModule: ")
+            p(f"Owner: {self._addr_name(module.owner())}")
+            p(f"Pending Owner: {self._addr_name(module.pendingOwner())}")
+            with indent():
+                self._print_list(
+                    "Qualified User Managers:",
+                    module.getRoleMembers(USER_MANAGER_ROLE),
+                )
+                self._print_list(
+                    "FBTC Block-list Managers:",
+                    module.getRoleMembers(LOCKER_ROLE),
+                )
+                self._print_list(
+                    "FBTC Pauser:", module.getRoleMembers(FBTC_PAUSER_ROLE)
+                )
+                self._print_list(
+                    "FireBridge Pauser:",
+                    module.getRoleMembers(BRIDGE_PAUSER_ROLE),
+                )
+                self._print_list(
+                    "Cross-chain Targets Manager:",
+                    module.getRoleMembers(CHAIN_MANAGER_ROLE),
+                )
+                self._print_list(
+                    "Cross-chain Fee Updater:",
+                    module.getRoleMembers(FEE_UPDATER_ROLE),
+                )
 
     def print(self):
         ContractFunctionWrapper._ignore_error = True
