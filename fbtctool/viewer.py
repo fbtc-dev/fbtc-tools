@@ -67,6 +67,8 @@ class Viewer(object):
         if addr is None:
             return "None"
 
+        addr = self.web3.to_checksum_address(addr)
+
         if len(self.factory.web3.eth.get_code(addr)) == 0:
             if with_balance:
                 eth = self.factory.web3.eth.get_balance(addr)
@@ -87,13 +89,37 @@ class Viewer(object):
             else:
                 return f"{addr} Contract"
 
+    def _codehash(self, addr):
+        addr = self.web3.to_checksum_address(addr)
+        code = self.factory.web3.eth.get_code(addr)
+        size = f"{len(code)} bytes"
+        code = code[: -32 - 11]  # strip metadata
+        code = code.replace(HexBytes(addr), b"")  # remove address(this)
+        hash = f"hash {self.web3.keccak(code).hex()}"
+        return f"({size} {hash})"
+
+    def _get_proxy_impl(self, addr):
+        addr = self.web3.to_checksum_address(addr)
+        impl = self.web3.eth.get_storage_at(
+            addr, 0x360894A13BA1A3210667C828492DB98DCA3E2076CC3735A920A3CA505D382BBC
+        )[12:].hex()
+
+        if int(impl, 16) == 0:
+            return None
+
+        return impl
+
     def print_chain_info(self):
         chain_id = self.factory.web3.eth.chain_id
         p(f"Current Chain: {chain_name(chain_id)}")
 
     def print_bridge(self):
-        p(f"FireBridge: {self.bridge.address}")
+        p(f"FireBridge: {self.bridge.address} {self._codehash(self.bridge.address)}")
         with indent():
+            impl = self._get_proxy_impl(self.bridge.address)
+            if impl:
+                p(f"Proxy impl: {impl} {self._codehash(impl)}")
+
             p(f"Owner: {self._addr_name(self.bridge.owner())}")
             p(f"Pending Owner: {self._addr_name(self.bridge.pendingOwner())}")
             p(f"Paused: {self.bridge.paused()}")
@@ -137,7 +163,7 @@ class Viewer(object):
         return f"{amount / (10**self.dec)} FBTC"
 
     def print_fbtc(self):
-        p(f"FBTC: {self.fbtc.address}")
+        p(f"FBTC: {self.fbtc.address} {self._codehash(self.fbtc.address)}")
         with indent():
             p(f"Bridge: {self.fbtc.bridge()}")
             p(f"Owner: {self._addr_name(self.fbtc.owner())}")
@@ -150,7 +176,7 @@ class Viewer(object):
             p(f"Total Supply: {self._to_btc(self.fbtc.totalSupply())}")
 
     def print_minter(self):
-        p(f"FBTCMinter: {self.minter.address}")
+        p(f"FBTCMinter: {self.minter.address} {self._codehash(self.minter.address)}")
 
         with indent():
             p(f"Owner: {self._addr_name(self.minter.owner())}")
@@ -186,7 +212,9 @@ class Viewer(object):
                     p(f"< {amount}: {tier[1] * 100/ self.FEE_RATE_BASE} %")
 
     def print_fee(self):
-        p(f"FeeModel: {self.fee_model.address}")
+        p(
+            f"FeeModel: {self.fee_model.address} {self._codehash(self.fee_model.address)}"
+        )
 
         with indent():
             p(f"Owner: {self._addr_name(self.fee_model.owner())}")
@@ -233,6 +261,40 @@ class Viewer(object):
                     with indent():
                         p(f"-- {chain_name(target.hex())}:")
                         self._print_fee_cfg(fee)
+
+    def print_fee_updater(self, fee_updater):
+        with indent():
+            try:
+                safe = self.factory.contract(fee_updater, "Safe")
+                ONE = "0x0000000000000000000000000000000000000001"
+                modules = safe.getModulesPaginated(ONE, 1000)
+            except Exception:
+                return
+
+            assert modules[1] == ONE, "Too many modules"
+            modules = modules[0]
+            p(f"Modules: {len(modules)} modules")
+            for i, module_addr in enumerate(modules):
+                with indent():
+                    p(f"({i+1}) {module_addr}")
+                    try:
+                        module = self.factory.contract(module_addr, "FeeUpdaterModule")
+                        FEE_UPDATER_ROLE, _ = self._call_if_error(
+                            module.FEE_UPDATER_ROLE
+                        )
+                    except Exception:
+                        pass
+
+                    if FEE_UPDATER_ROLE is None:
+                        p("Not FeeUpdaterModule")
+                        continue
+
+                    self._print_list(
+                        "Fee Updater:",
+                        module.getRoleMembers(FEE_UPDATER_ROLE),
+                        True,
+                        True,
+                    )
 
     def print_safe(self):
         addr = self.bridge.owner()
@@ -288,7 +350,7 @@ class Viewer(object):
         CHAIN_MANAGER_ROLE = module.CHAIN_MANAGER_ROLE()
         FEE_UPDATER_ROLE = module.FEE_UPDATER_ROLE()
         with indent():
-            p("FBTCGovernorModule: ")
+            p(f"FBTCGovernorModule: {module_addr} {self._codehash(module_addr)}")
             p(f"Owner: {self._addr_name(module.owner())}")
             p(f"Pending Owner: {self._addr_name(module.pendingOwner())}")
             with indent():
@@ -311,10 +373,14 @@ class Viewer(object):
                     "Cross-chain Targets Manager:",
                     module.getRoleMembers(CHAIN_MANAGER_ROLE),
                 )
-                self._print_list(
-                    "Cross-chain Fee Updater:",
-                    module.getRoleMembers(FEE_UPDATER_ROLE),
-                )
+
+                fee_updaters = module.getRoleMembers(FEE_UPDATER_ROLE)
+                p("Cross-chain Fee Updater:")
+                with indent():
+                    for i, s in enumerate(fee_updaters):
+                        s = self._addr_name(s, False)
+                        p(f"({i+1}) {s}")
+                        self.print_fee_updater(i)
 
     def print(self):
         ContractFunctionWrapper._ignore_error = True
