@@ -100,7 +100,10 @@ class Viewer(object):
             p(f"FBTC: {self.bridge.fbtc()}")
             p(f"Minter: {self.bridge.minter()}")
             p(f"Fee Model: {self.bridge.feeModel()}")
-            p(f"Fee Recipient: {self._addr_name(self.bridge.feeRecipient())}")
+            fee_recipient = self.bridge.feeRecipient()
+            p(
+                f"Fee Recipient: {self._addr_name(fee_recipient)} | {self._to_btc(self.fbtc.balanceOf(fee_recipient))}"
+            )
             p(f"Main Chain: {chain_name(self.bridge.MAIN_CHAIN().hex())}")
             p(f"Current Chain: {chain_name(self.bridge.chain().hex())}")
             self.dst_chains = self.bridge.getValidDstChains()

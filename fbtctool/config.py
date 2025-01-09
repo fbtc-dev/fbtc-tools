@@ -52,6 +52,12 @@ FBTC_DEPLOYMENT = {
         "rpc": "https://rpc.gobob.xyz/",
         "bridge": "0xbee335BB44e75C4794a0b9B54E8027b111395943",
     },
+    146: {
+        "name": "sonic",
+        "full": "Sonic Mainnet",
+        "rpc": "https://rpc.soniclabs.com",
+        "bridge": "0xbee335BB44e75C4794a0b9B54E8027b111395943",
+    },
 }
 
 DEFAULT_BTC_RPC = BTC_RPC["btc"]
