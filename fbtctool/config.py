@@ -25,13 +25,13 @@ FBTC_DEPLOYMENT = {
     56: {  # 0x38
         "name": "bsc",
         "full": "BNB Smart Chain Mainnet",
-        "rpc": "https://rpc.ankr.com/bsc",
+        "rpc": "https://bsc.drpc.org",
         "bridge": "0xbee335BB44e75C4794a0b9B54E8027b111395943",
     },
     1: {  # 0x1
         "name": "eth",
         "full": "Ethereum Mainnet",
-        "rpc": "https://rpc.ankr.com/eth",
+        "rpc": "https://eth.llamarpc.com",
         "bridge": "0xbee335BB44e75C4794a0b9B54E8027b111395943",
     },
     42161: {
@@ -56,6 +56,12 @@ FBTC_DEPLOYMENT = {
         "name": "sonic",
         "full": "Sonic Mainnet",
         "rpc": "https://rpc.soniclabs.com",
+        "bridge": "0xbee335BB44e75C4794a0b9B54E8027b111395943",
+    },
+    21000000: {
+        "name": "corn",
+        "full": "Corn Mainnet",
+        "rpc": "https://mainnet.corn-rpc.com",
         "bridge": "0xbee335BB44e75C4794a0b9B54E8027b111395943",
     },
 }
